@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+  <title>Student Consistency Tracker</title>
+  <style>
+    /* ---------- RESET & BASE ---------- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0d1b2a, #1b3a4b, #0f2d40);
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    #app {
+      max-width: 540px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    /* ---------- GLASS CARDS ---------- */
+    .card {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      padding: 18px 16px;
+      margin-bottom: 18px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+      transition: transform 0.2s;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #e2e8f0;
+    }
+    .card-title .badge {
+      background: rgba(56,189,248,0.2);
+      color: #38bdf8;
+      font-size: 13px;
+      padding: 2px 12px;
+      border-radius: 20px;
+    }
+    /* ---------- HERO ---------- */
+    .hero {
+      background: linear-gradient(135deg, #0d1b2a, #163447);
+      border-radius: 18px;
+      padding: 20px 16px;
+      margin-bottom: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .hero .date {
+      font-size: 13px;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+    .hero .greeting {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 4px 0 8px;
+    }
+    .hero .streak {
+      display: inline-block;
+      background: rgba(251,191,36,0.2);
+      color: #fbbf24;
+      padding: 2px 14px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .stat-item {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat-item .num {
+      font-size: 24px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    .stat-item .label {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    /* ---------- MOOD ---------- */
+    .mood-buttons {
+      display: flex;
+      justify-content: space-around;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .mood-btn {
+      background: transparent;
+      border: 2px solid transparent;
+      border-radius: 40px;
+      font-size: 28px;
+      padding: 6px 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      line-height: 1;
+    }
+    .mood-btn.selected {
+      border-color: #38bdf8;
+      transform: scale(1.15);
+      box-shadow: 0 0 20px rgba(56,189,248,0.3);
+    }
+    .mood-note-input {
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #e2e8f0;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    .mood-note-input::placeholder { color: #94a3b8; }
+    .mood-saved-msg {
+      font-size: 13px;
+      color: #34d399;
+      margin-top: 6px;
+      display: none;
+    }
+    /* ---------- ATTENDANCE ---------- */
+    .attendance-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #64748b;
+      transition: all 0.3s;
+    }
+    .status-dot.present {
+      background: #34d399;
+      box-shadow: 0 0 20px #34d399;
+      animation: glowPulse 1.5s infinite;
+    }
+    @keyframes glowPulse {
+      0% { box-shadow: 0 0 5px #34d399; }
+      50% { box-shadow: 0 0 25px #34d399; }
+      100% { box-shadow: 0 0 5px #34d399; }
+    }
+    .btn {
+      background: rgba(56,189,248,0.15);
+      border: 1px solid rgba(56,189,248,0.3);
+      color: #38bdf8;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-success {
+      background: rgba(52,211,153,0.2);
+      border-color: #34d399;
+      color: #34d399;
+    }
+    .btn-success:disabled {
+      opacity: 0.7;
+    }
+    .checkin-time {
+      font-size: 13px;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
+    /* ---------- TIMER ---------- */
+    .timer-display {
+      font-size: 40px;
+      font-weight: 700;
+      font-family: monospace;
+      text-align: center;
+      letter-spacing: 2px;
+      margin: 10px 0;
+      transition: color 0.3s;
+    }
+    .timer-display.warning { color: #f87171; }
+    .timer-mode-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 8px 0;
+    }
+    .timer-mode-btns .btn {
+      font-size: 12px;
+      padding: 4px 14px;
+    }
+    .timer-controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 6px 0;
+    }
+    .timer-controls .btn {
+      min-width: 70px;
+      justify-content: center;
+    }
+    .timer-total {
+      text-align: center;
+      font-size: 14px;
+      color: #94a3b8;
+      margin-top: 8px;
+    }
+    .custom-timer-input {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    .custom-timer-input input {
+      width: 80px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #e2e8f0;
+      padding: 4px 8px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    /* ---------- TARGETS ---------- */
+    .target-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .target-item .priority {
+      font-size: 11px;
+      padding: 1px 10px;
+      border-radius: 30px;
+      background: rgba(255,255,255,0.08);
+    }
+    .priority-high { color: #f87171; background: rgba(248,113,113,0.2); }
+    .priority-medium { color: #fbbf24; background: rgba(251,191,36,0.2); }
+    .priority-low { color: #34d399; background: rgba(52,211,153,0.2); }
+    .target-text { flex: 1; font-size: 14px; }
+    .target-del {
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 18px;
+      padding: 0 4px;
+    }
+    .target-del:hover { color: #f87171; }
+    .add-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .add-row input {
+      flex: 1;
+      min-width: 140px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #e2e8f0;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+    .add-row input::placeholder { color: #94a3b8; }
+    .priority-chips {
+      display: flex;
+      gap: 4px;
+    }
+    .priority-chips .chip {
+      padding: 4px 10px;
+      border-radius: 30px;
+      font-size: 12px;
+      cursor: pointer;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid transparent;
+      transition: 0.2s;
+    }
+    .priority-chips .chip.active-high { border-color: #f87171; background: rgba(248,113,113,0.15); }
+    .priority-chips .chip.active-medium { border-color: #fbbf24; background: rgba(251,191,36,0.15); }
+    .priority-chips .chip.active-low { border-color: #34d399; background: rgba(52,211,153,0.15); }
+    .empty-state {
+      color: #94a3b8;
+      font-size: 14px;
+      text-align: center;
+      padding: 12px 0;
+    }
+    /* ---------- RATIO ---------- */
+    .ratio-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 6px 0;
+    }
+    .ratio-fraction {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 32px;
+      font-weight: 700;
+    }
+    .ratio-line {
+      width: 2px;
+      height: 30px;
+      background: #38bdf8;
+    }
+    .ratio-percent {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .ratio-status {
+      font-size: 15px;
+      margin-top: 4px;
+    }
+    .progress-bar-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 10px;
+      transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      background: #f87171;
+    }
+    .progress-bar-fill.amber { background: #fbbf24; }
+    .progress-bar-fill.green {
+      background: #34d399;
+      animation: mintPulse 2s infinite;
+    }
+    @keyframes mintPulse {
+      0% { box-shadow: 0 0 0 #34d399; }
+      50% { box-shadow: 0 0 20px #34d399; }
+      100% { box-shadow: 0 0 0 #34d399; }
+    }
+    .priority-breakdown {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 6px;
+      font-size: 13px;
+    }
+    .priority-breakdown .pill {
+      padding: 2px 12px;
+      border-radius: 30px;
+      background: rgba(255,255,255,0.05);
+    }
+    /* ---------- SUBJECTS ---------- */
+    .subject-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 6px 0;
+    }
+    .subject-chip {
+      padding: 6px 14px;
+      border-radius: 30px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer;
+      font-size: 13px;
+      transition: 0.2s;
+      user-select: none;
+    }
+    .subject-chip.active {
+      background: rgba(52,211,153,0.2);
+      border-color: #34d399;
+      color: #34d399;
+    }
+    .subject-chip.active::after { content: " ✓"; }
+    .add-subject-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .add-subject-row input {
+      flex: 1;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    /* ---------- HABITS ---------- */
+    .habit-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .habit-check {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #64748b;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .habit-check.checked {
+      border-color: #34d399;
+      background: rgba(52,211,153,0.2);
+      color: #34d399;
+    }
+    .habit-check.checked::after { content: "✓"; }
+    .habit-text { flex: 1; font-size: 14px; }
+    .habit-del {
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 16px;
+      padding: 0 4px;
+    }
+    .habit-del:hover { color: #f87171; }
+    .habit-progress {
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 6px 0 4px;
+    }
+    .habit-progress .bar {
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+    .habit-progress .bar .fill {
+      height: 100%;
+      background: #34d399;
+      transition: width 0.4s;
+    }
+    .add-habit-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .add-habit-row input {
+      flex: 1;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    /* ---------- WEEKLY CHART ---------- */
+    .chart-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      height: 100px;
+      gap: 4px;
+      padding: 8px 0;
+    }
+    .chart-bar-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .chart-bar {
+      width: 100%;
+      max-width: 30px;
+      border-radius: 6px 6px 0 0;
+      background: #64748b;
+      transition: height 0.5s ease;
+      min-height: 2px;
+      position: relative;
+    }
+    .chart-bar.today { border: 2px solid #38bdf8; box-shadow: 0 0 12px rgba(56,189,248,0.3); }
+    .chart-bar.green { background: #34d399; }
+    .chart-bar.amber { background: #fbbf24; }
+    .chart-bar.red { background: #f87171; }
+    .chart-bar.gray { background: #475569; }
+    .chart-day-label {
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+    .chart-day-label.today { color: #38bdf8; font-weight: 700; }
+    .chart-mood {
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+    /* ---------- CALENDAR ---------- */
+    .calendar-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .calendar-nav .month {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .calendar-nav button {
+      background: rgba(255,255,255,0.06);
+      border: none;
+      color: #e2e8f0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .calendar-grid .day-header {
+      text-align: center;
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+      padding: 4px 0;
+    }
+    .calendar-day {
+      aspect-ratio: 1/1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 14px;
+      background: rgba(255,255,255,0.03);
+      cursor: default;
+      transition: 0.15s;
+      position: relative;
+      min-height: 36px;
+    }
+    .calendar-day.has-data {
+      cursor: pointer;
+    }
+    .calendar-day.has-data:hover {
+      transform: scale(1.07);
+    }
+    .calendar-day.today {
+      border: 2px solid #38bdf8;
+    }
+    .calendar-day.future {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .calendar-day .mood-emoji {
+      position: absolute;
+      bottom: 1px;
+      right: 1px;
+      font-size: 10px;
+      line-height: 1;
+    }
+    .calendar-legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .calendar-legend span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    /* ---------- MODAL ---------- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+      z-index: 999;
+      padding: 0 16px;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal-sheet {
+      background: #163447;
+      border-radius: 24px 24px 0 0;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      padding: 20px 20px 40px;
+      width: 100%;
+      max-width: 540px;
+      transform: translateY(40px);
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-overlay.open .modal-sheet {
+      transform: translateY(0);
+    }
+    .modal-drag {
+      width: 40px;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 4px;
+      margin: 0 auto 16px;
+    }
+    .modal-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .modal-sub {
+      font-size: 14px;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+    .modal-status-pill {
+      display: inline-block;
+      padding: 2px 14px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .modal-list {
+      list-style: none;
+      padding: 0;
+      margin: 6px 0 12px;
+    }
+    .modal-list li {
+      padding: 4px 0;
+      font-size: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .modal-close-btn {
+      width: 100%;
+      padding: 12px;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      border-radius: 30px;
+      color: #e2e8f0;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+    /* ---------- TOAST ---------- */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: #163447;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #e2e8f0;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 14px;
+      z-index: 9999;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+      max-width: 90%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: #34d399; color: #34d399; }
+    .toast.warning { border-color: #fbbf24; color: #fbbf24; }
+    .toast.error { border-color: #f87171; color: #f87171; }
+    /* ---------- UTILITIES ---------- */
+    .text-muted { color: #94a3b8; }
+    .text-center { text-align: center; }
+    .mt-8 { margin-top: 8px; }
+    .mb-8 { margin-bottom: 8px; }
+    .flex { display: flex; align-items: center; gap: 6px; }
+    .gap-4 { gap: 4px; }
+    .w-full { width: 100%; }
+    /* ---------- RESPONSIVE ---------- */
+    @media (max-width: 420px) {
+      .stat-item .num { font-size: 20px; }
+      .hero .greeting { font-size: 18px; }
+      .timer-display { font-size: 32px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+    /* Focus styles for accessibility */
+    button:focus-visible, input:focus-visible, .habit-check:focus-visible {
+      outline: 3px solid #38bdf8;
+      outline-offset: 2px;
+    }
+    /* Scrollbar */
+    .modal-sheet::-webkit-scrollbar { width: 4px; }
+    .modal-sheet::-webkit-scrollbar-track { background: transparent; }
+    .modal-sheet::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- ===== HERO ===== -->
+  <header class="hero" id="hero">
+    <div class="date" id="currentDate"></div>
+    <div class="greeting" id="greeting"></div>
+    <div class="streak" id="streakBadge">🔥 0 day streak</div>
+    <div class="stat-grid" id="statGrid">
+      <div class="stat-item"><div class="num" id="statPresent">0</div><div class="label">Days Present</div></div>
+      <div class="stat-item"><div class="num" id="statGoalsMet">0</div><div class="label">Goals Met</div></div>
+      <div class="stat-item"><div class="num" id="statConsistency">0%</div><div class="label">Consistency</div></div>
+      <div class="stat-item"><div class="num" id="statStudyHours">0h 0m</div><div class="label">Study Hours</div></div>
+    </div>
+  </header>
+
+  <!-- ===== MOOD ===== -->
+  <section class="card" id="moodCard">
+    <div class="card-title">😊 How are you feeling today?</div>
+    <div class="mood-buttons" id="moodButtons">
+      <button class="mood-btn" data-mood="struggling" aria-label="Struggling">😔</button>
+      <button class="mood-btn" data-mood="okay" aria-label="Okay">😐</button>
+      <button class="mood-btn" data-mood="good" aria-label="Good">🙂</button>
+      <button class="mood-btn" data-mood="great" aria-label="Great">😊</button>
+      <button class="mood-btn" data-mood="excellent" aria-label="Excellent">🤩</button>
+    </div>
+    <input class="mood-note-input" id="moodNote" placeholder="Anything on your mind? (optional)" maxlength="120" />
+    <div class="mood-saved-msg" id="moodSavedMsg">✅ Mood saved for today</div>
+    <div class="text-muted" style="font-size:13px; margin-top:6px;" id="moodChangeWarning"></div>
+  </section>
+
+  <!-- ===== ATTENDANCE ===== -->
+  <section class="card">
+    <div class="card-title">📋 Today's Attendance</div>
+    <div class="attendance-status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Not marked — tap to check in</span>
+    </div>
+    <button class="btn" id="attendanceBtn">👆 Mark Attendance</button>
+    <div class="checkin-time" id="checkinTime"></div>
+  </section>
+
+  <!-- ===== TIMER ===== -->
+  <section class="card">
+    <div class="card-title">⏱️ Study Timer</div>
+    <div class="timer-display" id="timerDisplay">25:00</div>
+    <div class="timer-mode-btns">
+      <button class="btn" data-preset="25">Focus 25m</button>
+      <button class="btn" data-preset="5">Short Break 5m</button>
+      <button class="btn" data-preset="15">Long Break 15m</button>
+      <button class="btn" id="customTimerBtn">Custom</button>
+    </div>
+    <div class="timer-controls">
+      <button class="btn" id="timerStartPause">▶ Start</button>
+      <button class="btn" id="timerReset">⟲ Reset</button>
+    </div>
+    <div class="custom-timer-input" id="customTimerInput" style="display:none;">
+      <input type="number" id="customMinutes" value="30" min="1" max="120" />
+      <button class="btn" id="setCustomTimer">Set</button>
+    </div>
+    <div class="timer-total">Total focused today: <span id="studyTotalToday">0h 0m</span></div>
+  </section>
+
+  <!-- ===== TARGETS SET ===== -->
+  <section class="card">
+    <div class="card-title">🎯 Targets Set Today <span class="badge" id="targetsSetCount">0</span></div>
+    <div id="targetsSetList"></div>
+    <div class="add-row">
+      <input id="targetInput" placeholder="What do you plan to do today…" />
+      <div class="priority-chips" id="priorityChips">
+        <span class="chip" data-priority="high">🔴 High</span>
+        <span class="chip active-medium" data-priority="medium">🟡 Medium</span>
+        <span class="chip" data-priority="low">🟢 Low</span>
+      </div>
+      <button class="btn" id="addTargetBtn">Add</button>
+    </div>
+  </section>
+
+  <!-- ===== TARGETS ACHIEVED ===== -->
+  <section class="card">
+    <div class="card-title">✅ Targets Achieved Today <span class="badge" id="targetsAchievedCount">0</span></div>
+    <div id="targetsAchievedList"></div>
+    <div class="add-row">
+      <input id="achieveInput" placeholder="What did you actually complete…" />
+      <button class="btn btn-success" id="addAchieveBtn">Add</button>
+    </div>
+  </section>
+
+  <!-- ===== PROGRESS RATIO ===== -->
+  <section class="card">
+    <div class="card-title">📊 Progress Ratio</div>
+    <div class="ratio-display">
+      <div class="ratio-fraction">
+        <span id="ratioTop" style="color:#f87171;">0</span>
+        <span class="ratio-line"></span>
+        <span id="ratioBottom" style="color:#e2e8f0;">0</span>
+      </div>
+      <div class="ratio-percent" id="ratioPercent" style="color:#f87171;">0%</div>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressFill" style="width:0%;"></div>
+    </div>
+    <div class="ratio-status" id="ratioStatus">Set some targets above to begin</div>
+    <div class="priority-breakdown" id="priorityBreakdown"></div>
+  </section>
+
+  <!-- ===== SUBJECTS ===== -->
+  <section class="card">
+    <div class="card-title">📚 Subjects Today <span class="badge" id="subjectCount">0</span></div>
+    <div class="subject-chips" id="subjectChips"></div>
+    <div class="add-subject-row">
+      <input id="subjectInput" placeholder="+ Add subject" />
+      <button class="btn" id="addSubjectBtn">Add</button>
+    </div>
+  </section>
+
+  <!-- ===== HABITS ===== -->
+  <section class="card">
+    <div class="card-title">🔄 Daily Habits <span class="badge" id="habitCount">0/0</span></div>
+    <div id="habitList"></div>
+    <div class="habit-progress" id="habitProgress">
+      <span id="habitProgressText">0 / 0 habits done</span>
+      <div class="bar"><div class="fill" id="habitProgressFill" style="width:0%;"></div></div>
+    </div>
+    <div class="add-habit-row">
+      <input id="habitInput" placeholder="Add custom habit…" />
+      <button class="btn" id="addHabitBtn">Add</button>
+    </div>
+    <button class="btn" id="editHabitsToggle" style="margin-top:8px; font-size:12px;">✏️ Edit habits</button>
+  </section>
+
+  <!-- ===== WEEKLY CHART ===== -->
+  <section class="card">
+    <div class="card-title">📊 This Week at a Glance</div>
+    <div class="chart-container" id="weeklyChart"></div>
+  </section>
+
+  <!-- ===== QUOTE ===== -->
+  <section class="card">
+    <div class="card-title">💬 Today's Motivation</div>
+    <div style="position:relative; padding-left:20px; border-left:3px solid #38bdf8; font-style:italic; font-size:16px; color:#e2e8f0;">
+      <span style="font-size:48px; color:#38bdf8; opacity:0.3; position:absolute; top:-10px; left:0;">"</span>
+      <div id="quoteText">Loading quote…</div>
+      <div style="margin-top:6px; font-size:13px; color:#94a3b8; font-style:normal;">— <span id="quoteAuthor"></span></div>
+    </div>
+  </section>
+
+  <!-- ===== CALENDAR HISTORY ===== -->
+  <section class="card">
+    <div class="card-title">📅 History</div>
+    <div class="calendar-nav">
+      <button id="calPrev">‹</button>
+      <span class="month" id="calMonthYear">August 2026</span>
+      <button id="calNext">›</button>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+    <div class="calendar-legend">
+      <span><span class="legend-color" style="background:#34d399;"></span> All done</span>
+      <span><span class="legend-color" style="background:#fbbf24;"></span> Partial</span>
+      <span><span class="legend-color" style="background:#f87171;"></span> None achieved</span>
+      <span><span class="legend-color" style="background:#a78bfa;"></span> No targets</span>
+      <span><span class="legend-color" style="background:#475569;"></span> No data</span>
+    </div>
+  </section>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-sheet">
+    <div class="modal-drag"></div>
+    <div class="modal-title" id="modalDate">Friday, August 28</div>
+    <div class="modal-sub" id="modalMood">😊 Great — "Feeling ready"</div>
+    <div class="modal-status-pill" id="modalStatusPill">✅ All done</div>
+    <div style="font-size:20px; font-weight:700; margin:8px 0;" id="modalRatio">Achieved: 3 / 3</div>
+    <div><strong>Targets Set</strong></div>
+    <ul class="modal-list" id="modalTargetsSet"></ul>
+    <div><strong>Targets Achieved</strong></div>
+    <ul class="modal-list" id="modalTargetsAchieved"></ul>
+    <div><strong>Subjects Studied</strong></div>
+    <ul class="modal-list" id="modalSubjects"></ul>
+    <div><strong>Habits Done</strong></div>
+    <ul class="modal-list" id="modalHabits"></ul>
+    <div><strong>Study Time</strong></div>
+    <ul class="modal-list" id="modalStudyTime"></ul>
+    <button class="modal-close-btn" id="modalClose">Close</button>
+  </div>
+</div>
+
+<script>
+  // ====================================================================
+  //  STUDENT CONSISTENCY TRACKER — FULL JAVASCRIPT
+  //  All data stored in localStorage under key 'consistencyTracker_v2'
+  // ====================================================================
+
+  (function() {
+    'use strict';
+
+    // ---- CONSTANTS ----
+    const STORAGE_KEY = 'consistencyTracker_v2';
+    const DEFAULT_HABITS = [
+      '💧 Drank 8 glasses of water',
+      '🏃 Exercised / walked 30 min',
+      '📵 Less than 2h recreational screen time',
+      '😴 Slept 7–8 hours last night',
+      '📖 Read for 20 minutes',
+      '🧘 Meditated or took mindful breaks',
+      '🥗 Ate a proper meal'
+    ];
+    const DEFAULT_SUBJECTS = ['Mathematics','Physics','Chemistry','Biology','English','History','Computer Science','Economics'];
+    const MOOD_EMOJIS = { struggling:'😔', okay:'😐', good:'🙂', great:'😊', excellent:'🤩' };
+    const QUOTES = [
+      { text:"The secret of getting ahead is getting started.", author:"Mark Twain" },
+      { text:"Discipline is the bridge between goals and accomplishment.", author:"Jim Rohn" },
+      { text:"Success is the sum of small efforts repeated day in and day out.", author:"Robert Collier" },
+      { text:"You don't have to be great to start, but you have to start to be great.", author:"Zig Ziglar" },
+      { text:"The future depends on what you do today.", author:"Mahatma Gandhi" },
+      { text:"It does not matter how slowly you go as long as you do not stop.", author:"Confucius" },
+      { text:"Push yourself, because no one else is going to do it for you.", author:"Unknown" },
+      { text:"Little by little, one travels far.", author:"J.R.R. Tolkien" },
+      { text:"Small daily improvements over time lead to stunning results.", author:"Robin Sharma" },
+      { text:"Motivation gets you going. Discipline keeps you growing.", author:"John Maxwell" },
+      { text:"Do something today that your future self will thank you for.", author:"Sean Patrick Flanery" },
+      { text:"Don't stop when you're tired. Stop when you're done.", author:"Unknown" },
+      { text:"Wake up with determination. Go to bed with satisfaction.", author:"Unknown" },
+      { text:"Every expert was once a beginner.", author:"Helen Hayes" },
+      { text:"Believe you can and you're halfway there.", author:"Theodore Roosevelt" },
+      { text:"Consistency is what transforms average into excellence.", author:"Unknown" },
+      { text:"An investment in knowledge pays the best interest.", author:"Benjamin Franklin" },
+      { text:"Education is the most powerful weapon you can use to change the world.", author:"Nelson Mandela" },
+      { text:"The beautiful thing about learning is that no one can take it away from you.", author:"B.B. King" },
+      { text:"Study while others are sleeping. Work while others are loafing.", author:"William Arthur Ward" },
+      { text:"Strive for progress, not perfection.", author:"Unknown" },
+      { text:"Success is not final, failure is not fatal: it is the courage to continue that counts.", author:"Winston Churchill" },
+      { text:"The only way to do great work is to love what you do.", author:"Steve Jobs" },
+      { text:"Learning is not attained by chance; it must be sought with ardour.", author:"Abigail Adams" },
+      { text:"A reader lives a thousand lives before he dies.", author:"George R.R. Martin" },
+      { text:"You are capable of more than you know
